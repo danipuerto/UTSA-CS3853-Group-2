@@ -8,7 +8,7 @@ typedef struct {
     int cacheSizeKB;
     int blockSize;
     int associativity;
-    char replacement[4];
+    char replacement[5];
     int physicalMemMB;
     float percentOS;
     int instructions;
@@ -38,20 +38,53 @@ void parseArguments(int argc, char *argv[], Config *config){
   int i;
   for(i = 1; i < argc; i++){
     
-    if(strcmp(argv[i], "-s") == 0)
+    if(strcmp(argv[i], "-s") == 0){
       config->cacheSizeKB = atoi(argv[++i]);
       
-    else if(strcmp(argv[i], "-b") == 0)
+      if(config->cacheSizeKB < 8 || config->cacheSizeKB > 8192){
+          printf("Invalid Cache Size\n");
+          exit(1);
+      }
+      
+    }
+      
+    else if(strcmp(argv[i], "-b") == 0){
       config->blockSize = atoi(argv[++i]);
       
-    else if(strcmp(argv[i], "-a") == 0)
-      config->associativity = atoi(argv[++i]);
+       if(config->blockSize < 8 || config->blockSize > 64){
+          printf("Invalid Block Size\n");
+          exit(1);
+      }
+    }
       
-    else if(strcmp(argv[i], "-r") == 0)
+    else if(strcmp(argv[i], "-a") == 0){
+      config->associativity = atoi(argv[++i]);
+    
+     if(config->associativity != 1 && config->associativity != 2 && config->associativity != 4 && config->associativity != 8 && config->associativity != 16){
+          printf("Invalid Associativity Size\n");
+          exit(1);
+      }  
+    }
+      
+    else if(strcmp(argv[i], "-r") == 0){
       strcpy(config->replacement, argv[++i]);
       
-    else if(strcmp(argv[i], "-p") == 0)
+      if (strcmp(config->replacement, "RR") != 0 && strcmp(config->replacement, "rr") != 0 && strcmp(config->replacement, "RND") != 0 && strcmp(config->replacement, "rnd") != 0)  {
+          printf("Invalid Replacement");
+          exit(1);
+      }
+      
+    }
+      
+    else if(strcmp(argv[i], "-p") == 0){
       config->physicalMemMB = atoi(argv[++i]);
+      
+       if(config->physicalMemMB < 128 || config->physicalMemMB > 4096){
+          printf("Invalid Physical Memory\n");
+          exit(1);
+      }
+      
+    }
       
     else if(strcmp(argv[i], "-u") == 0){
       config->percentOS = atof(argv[++i]);
@@ -63,8 +96,14 @@ void parseArguments(int argc, char *argv[], Config *config){
       
     }
       
-    else if(strcmp(argv[i], "-n") == 0)
+    else if(strcmp(argv[i], "-n") == 0){
       config->instructions = atoi(argv[++i]);
+      
+      if(!(config->instructions == -1 || config->instructions >= 1)){
+          printf("Invalid Instruction\n");
+          exit(1);
+      }
+    }
     
     else if(strcmp(argv[i], "-f") == 0) {
       if(config->numFiles < 3){
