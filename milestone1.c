@@ -179,7 +179,11 @@ void printResults(Config *config){
    
    printf("Physical Memory:                %d MB\n", config->physicalMemMB);
    printf("Percent Memory Used by System:  %.1f%%\n", config->percentOS);
-   printf("Instructions / Time Slice:      %d\n", config->instructions);
+   //printf("Instructions / Time Slice:      %d\n", config->instructions);
+   if(config->instructions == -1)
+     printf("Instructions / Time Slice:      MAX\n");
+   else
+     printf("Instructions / Time Slice:      %d\n", config->instructions);
    
   //Cache values Calculated
    printf("\n\n***** Cache Calculated Values *****\n\n");
