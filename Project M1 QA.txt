@@ -1,0 +1,289 @@
+bxm793@fox01:~/project$ ./milestone1 -s 8 -b 8 -a 1 -r rr -p 128 -n 1 -u 0 -f Trace1.trc
+Cache Simulator - CS 3853 - Team #2
+
+Trace File(s):
+
+        Trace1.trc
+
+
+***** Cache Input Parameters *****
+
+Cache Size:                     8 KB
+Block Size:                     8 bytes
+Associativity:                  1
+Replacement Policy:             Round Robin
+Physical Memory:                128 MB
+Percent Memory Used by System:  0.0%
+Instructions / Time Slice:      1
+
+
+***** Cache Calculated Values *****
+
+Total # Blocks:                 1024
+Tag Size:                       14 bits
+Index Size:                     10 bits
+Total # Rows:                   1024
+Overhead Size:                  1920 bytes
+Implementation Memory Size:     9.88 KB (10112 bytes)
+Cost:                           $0.69 @ $0.07 per KB
+
+
+***** Physical Memory Calculated Values *****
+
+Number of Physical Pages:       32768
+Number of Pages for System:     0
+Size of Page Table Entry:       16 bits
+Total RAM for Page Table(s):    1048576 bytes
+bxm793@fox01:~/project$ ./milestone1 -s 8192 -b 64 -a 16 -r rnd -p 4096 -n -1 -u 100 -f Trace1.trc
+Cache Simulator - CS 3853 - Team #2
+
+Trace File(s):
+
+        Trace1.trc
+
+
+***** Cache Input Parameters *****
+
+Cache Size:                     8192 KB
+Block Size:                     64 bytes
+Associativity:                  16
+Replacement Policy:             Random
+Physical Memory:                4096 MB
+Percent Memory Used by System:  100.0%
+Instructions / Time Slice:      MAX
+
+
+***** Cache Calculated Values *****
+
+Total # Blocks:                 131072
+Tag Size:                       13 bits
+Index Size:                     13 bits
+Total # Rows:                   8192
+Overhead Size:                  229376 bytes
+Implementation Memory Size:     8416.00 KB (8617984 bytes)
+Cost:                           $589.12 @ $0.07 per KB
+
+
+***** Physical Memory Calculated Values *****
+
+Number of Physical Pages:       1048576
+Number of Pages for System:     1048576
+Size of Page Table Entry:       21 bits
+Total RAM for Page Table(s):    1376256 bytes
+bxm793@fox01:~/project$ clear
+bxm793@fox01:~/project$ ./milestone1 -s 8 -b 8 -a 1 -r rr -p 128 -n 1 -u 0 -f Trace1.trc
+Cache Simulator - CS 3853 - Team #2
+
+Trace File(s):
+
+        Trace1.trc
+
+
+***** Cache Input Parameters *****
+
+Cache Size:                     8 KB
+Block Size:                     8 bytes
+Associativity:                  1
+Replacement Policy:             Round Robin
+Physical Memory:                128 MB
+Percent Memory Used by System:  0.0%
+Instructions / Time Slice:      1
+
+
+***** Cache Calculated Values *****
+
+Total # Blocks:                 1024
+Tag Size:                       14 bits
+Index Size:                     10 bits
+Total # Rows:                   1024
+Overhead Size:                  1920 bytes
+Implementation Memory Size:     9.88 KB (10112 bytes)
+Cost:                           $0.69 @ $0.07 per KB
+
+
+***** Physical Memory Calculated Values *****
+
+Number of Physical Pages:       32768
+Number of Pages for System:     0
+Size of Page Table Entry:       16 bits
+Total RAM for Page Table(s):    1048576 bytes
+bxm793@fox01:~/project$ ./milestone1 -s 8192 -b 64 -a 16 -r rnd -p 4096 -n -1 -u 100 -f Trace1.trc
+Cache Simulator - CS 3853 - Team #2
+
+Trace File(s):
+
+        Trace1.trc
+
+
+***** Cache Input Parameters *****
+
+Cache Size:                     8192 KB
+Block Size:                     64 bytes
+Associativity:                  16
+Replacement Policy:             Random
+Physical Memory:                4096 MB
+Percent Memory Used by System:  100.0%
+Instructions / Time Slice:      MAX
+
+
+***** Cache Calculated Values *****
+
+Total # Blocks:                 131072
+Tag Size:                       13 bits
+Index Size:                     13 bits
+Total # Rows:                   8192
+Overhead Size:                  229376 bytes
+Implementation Memory Size:     8416.00 KB (8617984 bytes)
+Cost:                           $589.12 @ $0.07 per KB
+
+
+***** Physical Memory Calculated Values *****
+
+Number of Physical Pages:       1048576
+Number of Pages for System:     1048576
+Size of Page Table Entry:       21 bits
+Total RAM for Page Table(s):    1376256 bytes
+bxm793@fox01:~/project$ ./milestone1 -s 512 -b 16 -a 4 -r rr -p 1024 -n 100 -u 0 -f Trace1.trc
+Cache Simulator - CS 3853 - Team #2
+
+Trace File(s):
+
+        Trace1.trc
+
+
+***** Cache Input Parameters *****
+
+Cache Size:                     512 KB
+Block Size:                     16 bytes
+Associativity:                  4
+Replacement Policy:             Round Robin
+Physical Memory:                1024 MB
+Percent Memory Used by System:  0.0%
+Instructions / Time Slice:      100
+
+
+***** Cache Calculated Values *****
+
+Total # Blocks:                 32768
+Tag Size:                       13 bits
+Index Size:                     13 bits
+Total # Rows:                   8192
+Overhead Size:                  57344 bytes
+Implementation Memory Size:     568.00 KB (581632 bytes)
+Cost:                           $39.76 @ $0.07 per KB
+
+
+***** Physical Memory Calculated Values *****
+
+Number of Physical Pages:       262144
+Number of Pages for System:     0
+Size of Page Table Entry:       19 bits
+Total RAM for Page Table(s):    1245184 bytes
+bxm793@fox01:~/project$ ./milestone1 -s 512 -b 16 -a 4 -r rr -p 1024 -n 100 -u 100 -f Trace1.trc
+Cache Simulator - CS 3853 - Team #2
+
+Trace File(s):
+
+        Trace1.trc
+
+
+***** Cache Input Parameters *****
+
+Cache Size:                     512 KB
+Block Size:                     16 bytes
+Associativity:                  4
+Replacement Policy:             Round Robin
+Physical Memory:                1024 MB
+Percent Memory Used by System:  100.0%
+Instructions / Time Slice:      100
+
+
+***** Cache Calculated Values *****
+
+Total # Blocks:                 32768
+Tag Size:                       13 bits
+Index Size:                     13 bits
+Total # Rows:                   8192
+Overhead Size:                  57344 bytes
+Implementation Memory Size:     568.00 KB (581632 bytes)
+Cost:                           $39.76 @ $0.07 per KB
+
+
+***** Physical Memory Calculated Values *****
+
+Number of Physical Pages:       262144
+Number of Pages for System:     262144
+Size of Page Table Entry:       19 bits
+Total RAM for Page Table(s):    1245184 bytes
+bxm793@fox01:~/project$ ./milestone1 -s 512 -b 16 -a 4 -r rr -p 128 -n 100 -u 75 -f Trace1.trc
+Cache Simulator - CS 3853 - Team #2
+
+Trace File(s):
+
+        Trace1.trc
+
+
+***** Cache Input Parameters *****
+
+Cache Size:                     512 KB
+Block Size:                     16 bytes
+Associativity:                  4
+Replacement Policy:             Round Robin
+Physical Memory:                128 MB
+Percent Memory Used by System:  75.0%
+Instructions / Time Slice:      100
+
+
+***** Cache Calculated Values *****
+
+Total # Blocks:                 32768
+Tag Size:                       10 bits
+Index Size:                     13 bits
+Total # Rows:                   8192
+Overhead Size:                  45056 bytes
+Implementation Memory Size:     556.00 KB (569344 bytes)
+Cost:                           $38.92 @ $0.07 per KB
+
+
+***** Physical Memory Calculated Values *****
+
+Number of Physical Pages:       32768
+Number of Pages for System:     24576
+Size of Page Table Entry:       16 bits
+Total RAM for Page Table(s):    1048576 bytes
+bxm793@fox01:~/project$ ./milestone1 -s 512 -b 16 -a 4 -r rr -p 4096 -n 100 -u 75 -f Trace1.trc
+Cache Simulator - CS 3853 - Team #2
+
+Trace File(s):
+
+        Trace1.trc
+
+
+***** Cache Input Parameters *****
+
+Cache Size:                     512 KB
+Block Size:                     16 bytes
+Associativity:                  4
+Replacement Policy:             Round Robin
+Physical Memory:                4096 MB
+Percent Memory Used by System:  75.0%
+Instructions / Time Slice:      100
+
+
+***** Cache Calculated Values *****
+
+Total # Blocks:                 32768
+Tag Size:                       15 bits
+Index Size:                     13 bits
+Total # Rows:                   8192
+Overhead Size:                  65536 bytes
+Implementation Memory Size:     576.00 KB (589824 bytes)
+Cost:                           $40.32 @ $0.07 per KB
+
+
+***** Physical Memory Calculated Values *****
+
+Number of Physical Pages:       1048576
+Number of Pages for System:     786432
+Size of Page Table Entry:       21 bits
+Total RAM for Page Table(s):    1376256 bytes
