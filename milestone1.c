@@ -70,7 +70,7 @@ void parseArguments(int argc, char *argv[], Config *config){
       strcpy(config->replacement, argv[++i]);
       
       if (strcmp(config->replacement, "RR") != 0 && strcmp(config->replacement, "rr") != 0 && strcmp(config->replacement, "RND") != 0 && strcmp(config->replacement, "rnd") != 0)  {
-          printf("Invalid Replacement");
+          printf("Invalid Replacement\n");
           exit(1);
       }
       
@@ -109,6 +109,10 @@ void parseArguments(int argc, char *argv[], Config *config){
       if(config->numFiles < 3){
           strcpy(config->traceFiles[config->numFiles], argv[++i]);
           config->numFiles++;
+      }
+      else{
+        printf("Exceed file limit\n");
+        exit(1);
       }
       
     }
