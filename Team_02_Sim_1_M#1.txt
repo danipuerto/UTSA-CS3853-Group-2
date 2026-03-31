@@ -35,5 +35,3 @@ Number of Physical Pages:       262144
 Number of Pages for System:     196608
 Size of Page Table Entry:       19 bits
 Total RAM for Page Table(s):    3735552 bytes
-bxm793@fox01:~/project$
-
