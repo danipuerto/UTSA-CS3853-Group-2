@@ -9,32 +9,29 @@ Trace File(s):
 
 ***** Cache Input Parameters *****
 
-Cache Size:                     512 KB
-Block Size:                     16 bytes
-Associativity:                  8
+Cache Size:                     256 KB
+Block Size:                     64 bytes
+Associativity:                  2
 Replacement Policy:             Round Robin
-Physical Memory:                1024 MB
-Percent Memory Used by System:  75.0%
+Physical Memory:                512 MB
+Percent Memory Used by System:  25.0%
 Instructions / Time Slice:      MAX
 
 
 ***** Cache Calculated Values *****
 
-Total # Blocks:                 32768
-Tag Size:                       14 bits
-Index Size:                     12 bits
-Total # Rows:                   4096
-Overhead Size:                  61440 bytes
-Implementation Memory Size:     572.00 KB (585728 bytes)
-Cost:                           $40.04 @ $0.07 per KB
+Total # Blocks:                 4096
+Tag Size:                       12 bits
+Index Size:                     11 bits
+Total # Rows:                   2048
+Overhead Size:                  6656 bytes
+Implementation Memory Size:     262.50 KB (268800 bytes)
+Cost:                           $18.38 @ $0.07 per KB
 
 
 ***** Physical Memory Calculated Values *****
 
-Number of Physical Pages:       262144
-Number of Pages for System:     196608
-Size of Page Table Entry:       19 bits
-Total RAM for Page Table(s):    3735552 bytes
-bxm793@fox01:~/project$
-
-
+Number of Physical Pages:       131072
+Number of Pages for System:     32768
+Size of Page Table Entry:       18 bits
+Total RAM for Page Table(s):    3538944 bytes
