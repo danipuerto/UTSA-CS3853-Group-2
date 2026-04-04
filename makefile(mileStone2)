@@ -1,0 +1,9 @@
+CC = gcc
+COPS = -D_GNU_SOURCE -g
+
+all: milestone2
+
+milestone2: milestone2.c
+	$(CC) $(COPS) -o milestone2 milestone2.c -lm
+clean:
+	rm -f milestone2
