@@ -1,7 +1,14 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include<unistd.h>
+#include<getopt.h>
 #include<math.h>
+
+#define MAX_PROCESSES 3
+#define MAX_PTE 524288
+#define PAGE_SIZE 4096U
+#define LINE_BUFFER 512
 
 typedef struct {
     //inputs from user input
@@ -30,8 +37,138 @@ typedef struct {
     int pageTableEntryBits;
     int totalPageTableBytes;
     
+    //Milestone #2 Variables
+    int pageSystem;
+    long long virtualPagesMapped;
+    long long pageTableHits;
+    long long pagesFromFree;
+    long long pageFaults;
+
+    int usedEntries[MAX_PROCESSES];
+    long long pageTableWasted[MAX_PROCESSES];
 } Config;
 
+typedef struct {
+    int valid;
+    int physical_frame;
+} PTE;
+
+typedef struct {
+    char *filename;
+    PTE *page_table;
+    int used_entries;
+    int peak_used_entries;
+    int finished;
+} Process;
+
+typedef struct {
+    int in_use;
+    int owner_pid;
+    unsigned int owner_vpn;
+} PhysicalPage;
+
+static long long rr_pointer = 0;
+
+void simulateVirtualMemory(Config *config) {
+
+    Process processes[MAX_PROCESSES] = {0};
+    long long user_pages = config->physicalPages - config->systemPages;
+
+    PhysicalPage *phys_pages = calloc(user_pages, sizeof(PhysicalPage));
+
+    int i, j;
+
+    // Initialize processes
+    for (i = 0; i < config->numFiles; i++) {
+        processes[i].filename = config->traceFiles[i];
+        processes[i].page_table = calloc(MAX_PTE, sizeof(PTE));
+    }
+
+    // Initialize physical pages
+    for (i = 0; i < user_pages; i++) {
+        phys_pages[i].in_use = 0;
+        phys_pages[i].owner_pid = -1;
+    }
+
+    char line[LINE_BUFFER];
+
+    for (i = 0; i < config->numFiles; i++) {
+
+        FILE *fp = fopen(config->traceFiles[i], "r");
+        if (!fp) continue;
+
+        while (fgets(line, sizeof(line), fp)) {
+
+            if (strncmp(line, "EIP", 3) == 0) {
+                unsigned int addr;
+                int len;
+
+                if (sscanf(line, "EIP (%d): %x", &len, &addr) == 2) {
+
+                    unsigned int vpn = addr >> 12;
+
+                    if (processes[i].page_table[vpn].valid) {
+                        config->pageTableHits++;
+                    } else {
+
+                        int found = -1;
+
+                        for (j = 0; j < user_pages; j++) {
+                            if (!phys_pages[j].in_use) {
+                                found = j;
+                                break;
+                            }
+                        }
+
+                        if (found != -1) {
+                            // Free page
+                            processes[i].page_table[vpn].valid = 1;
+                            processes[i].page_table[vpn].physical_frame = found;
+
+                            phys_pages[found].in_use = 1;
+                            phys_pages[found].owner_pid = i;
+                            phys_pages[found].owner_vpn = vpn;
+
+                            config->pagesFromFree++;
+                        } else {
+                            // Page fault (RR replacement)
+                            int victim = rr_pointer % user_pages;
+                            rr_pointer++;
+
+                            int old_pid = phys_pages[victim].owner_pid;
+                            int old_vpn = phys_pages[victim].owner_vpn;
+
+                            processes[old_pid].page_table[old_vpn].valid = 0;
+
+                            processes[i].page_table[vpn].valid = 1;
+                            processes[i].page_table[vpn].physical_frame = victim;
+
+                            phys_pages[victim].owner_pid = i;
+                            phys_pages[victim].owner_vpn = vpn;
+
+                            config->pageFaults++;
+                        }
+
+                        config->virtualPagesMapped++;
+                        processes[i].used_entries++;
+                    }
+                }
+            }
+        }
+        fclose(fp);
+    }
+
+    // Save per-process stats
+    for (i = 0; i < config->numFiles; i++) {
+        config->usedEntries[i] = processes[i].used_entries;
+
+        config->pageTableWasted[i] =
+            (long long)(MAX_PTE - processes[i].used_entries)
+            * config->pageTableEntryBits / 8;
+    }
+
+    free(phys_pages);
+}
 
 void parseArguments(int argc, char *argv[], Config *config){
   
@@ -154,6 +291,8 @@ void computeMemoryValues(Config *config){
   
   config->totalPageTableBytes = ((512 * 1024) * config->numFiles * config->pageTableEntryBits) / 8;
   
+  config->pageSystem = (int)(config->percentOS / 100.0 * config->physicalPages);
+  
   
 }
 
@@ -213,6 +352,27 @@ void printResults(Config *config){
 
     printf("Total RAM for Page Table(s):    %d bytes\n", config->totalPageTableBytes);  //(512K entries * 3 .trc files * 19 / 8)
   
+  //Virtual Memory Simulation Results
+   printf("\n\n***** Virtual Memory Simulation Results *****\n\n");
+   printf("Physical Pages Used By SYSTEM:  %d\n", config->pageSystem);
+   printf("Pages Available to User:        %d\n\n", config->physicalPages - config->pageSystem);
+   printf("Virtual Pages Mapped:           %lld\n", config->virtualPagesMapped);
+   printf("        ------------------------------\n");
+   printf("        Page Table Hits:        %lld\n\n", config->pageTableHits);
+   printf("        Pages from Free:        %lld\n\n", config->pagesFromFree);
+   printf("        Total Page Faults:      %lld\n\n\n", config->pageFaults);
+
+   printf("Page Table Usage Per Process:\n");
+printf("------------------------------\n");
+for (i = 0; i < config->numFiles; i++) {
+    double pct = ((double)config->usedEntries[i] / MAX_PTE) * 100.0;
+    printf("[%d] %s:\n", i, config->traceFiles[i]);
+    printf("        Used Page Table Entries: %d ( %.2f%%)\n", 
+           config->usedEntries[i], pct);
+    printf("        Page Table Wasted:       %lld bytes\n", 
+           config->pageTableWasted[i]);
+    printf("\n");
+  }
 }
 
 
@@ -223,6 +383,7 @@ int main(int argc, char *argv[]){
   parseArguments(argc, argv, &config);
   computeCacheValues(&config);
   computeMemoryValues(&config);
+  simulateVirtualMemory(&config);
   printResults(&config);
   
   return 0;
