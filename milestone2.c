@@ -4,6 +4,7 @@
 #include<unistd.h>
 #include<getopt.h>
 #include<math.h>
+#include<limits.h>
 
 #define MAX_PROCESSES 3
 #define MAX_PTE 524288
@@ -69,6 +70,58 @@ typedef struct {
 
 static long long rr_pointer = 0;
 
+void translateAddress(unsigned int addr, int pid,
+                      Process *processes, PhysicalPage *phys_pages,
+                      long long user_pages, Config *config) {
+
+    unsigned int vpn = addr >> 12;
+    if (vpn >= MAX_PTE) return;
+
+    config->virtualPagesMapped++;   
+
+    if (processes[pid].page_table[vpn].valid) {
+        config->pageTableHits++;
+    } else {
+        int found = -1;
+        int j;
+        for (j = 0; j < user_pages; j++) {
+            if (!phys_pages[j].in_use) {
+                found = j;
+                break;
+            }
+        }
+
+        if (found != -1) {
+            processes[pid].page_table[vpn].valid = 1;
+            processes[pid].page_table[vpn].physical_frame = found;
+
+            phys_pages[found].in_use = 1;
+            phys_pages[found].owner_pid = pid;
+            phys_pages[found].owner_vpn = vpn;
+
+            config->pagesFromFree++;
+        } else {
+            int victim = rr_pointer % user_pages;
+            rr_pointer++;
+
+            int old_pid = phys_pages[victim].owner_pid;
+            int old_vpn = phys_pages[victim].owner_vpn;
+
+            processes[old_pid].page_table[old_vpn].valid = 0;
+            processes[old_pid].used_entries--;  
+            processes[pid].page_table[vpn].valid = 1;
+            processes[pid].page_table[vpn].physical_frame = victim;
+
+            phys_pages[victim].owner_pid = pid;
+            phys_pages[victim].owner_vpn = vpn;
+
+            config->pageFaults++;
+        }
+
+        processes[pid].used_entries++;
+    }
+}
+
 void simulateVirtualMemory(Config *config) {
 
     Process processes[MAX_PROCESSES] = {0};
@@ -76,7 +129,7 @@ void simulateVirtualMemory(Config *config) {
 
     PhysicalPage *phys_pages = calloc(user_pages, sizeof(PhysicalPage));
 
-    int i, j;
+    int i;
 
     // Initialize processes
     for (i = 0; i < config->numFiles; i++) {
@@ -92,70 +145,70 @@ void simulateVirtualMemory(Config *config) {
 
     char line[LINE_BUFFER];
 
+    int allDone = 0;
+    FILE *fps[MAX_PROCESSES] = {NULL};
+
     for (i = 0; i < config->numFiles; i++) {
+        fps[i] = fopen(config->traceFiles[i], "r");
+        if (!fps[i]) processes[i].finished = 1;
+    }
 
-        FILE *fp = fopen(config->traceFiles[i], "r");
-        if (!fp) continue;
+    while (!allDone) {
+        allDone = 1;
 
-        while (fgets(line, sizeof(line), fp)) {
+        for (i = 0; i < config->numFiles; i++) {
+            if (processes[i].finished) continue;
+            allDone = 0;
 
-            if (strncmp(line, "EIP", 3) == 0) {
-                unsigned int addr;
-                int len;
+            int instrCount = 0;
+            int limit = (config->instructions == -1) ? INT_MAX : config->instructions;
 
-                if (sscanf(line, "EIP (%d): %x", &len, &addr) == 2) {
-
-                    unsigned int vpn = addr >> 12;
-
-                    if (processes[i].page_table[vpn].valid) {
-                        config->pageTableHits++;
-                    } else {
-
-                        int found = -1;
-
-                        for (j = 0; j < user_pages; j++) {
-                            if (!phys_pages[j].in_use) {
-                                found = j;
-                                break;
-                            }
-                        }
-
-                        if (found != -1) {
-                            // Free page
-                            processes[i].page_table[vpn].valid = 1;
-                            processes[i].page_table[vpn].physical_frame = found;
-
-                            phys_pages[found].in_use = 1;
-                            phys_pages[found].owner_pid = i;
-                            phys_pages[found].owner_vpn = vpn;
-
-                            config->pagesFromFree++;
-                        } else {
-                            // Page fault (RR replacement)
-                            int victim = rr_pointer % user_pages;
-                            rr_pointer++;
-
-                            int old_pid = phys_pages[victim].owner_pid;
-                            int old_vpn = phys_pages[victim].owner_vpn;
-
-                            processes[old_pid].page_table[old_vpn].valid = 0;
-
-                            processes[i].page_table[vpn].valid = 1;
-                            processes[i].page_table[vpn].physical_frame = victim;
-
-                            phys_pages[victim].owner_pid = i;
-                            phys_pages[victim].owner_vpn = vpn;
-
-                            config->pageFaults++;
-                        }
-
-                        config->virtualPagesMapped++;
-                        processes[i].used_entries++;
+            while (instrCount < limit) {
+                int gotEIP = 0;
+                while (fgets(line, sizeof(line), fps[i])) {
+                    if (strncmp(line, "EIP", 3) == 0) {
+                        gotEIP = 1;
+                        break;
                     }
                 }
+
+                if (!gotEIP) {
+                    fclose(fps[i]);
+                    fps[i] = NULL;
+                    processes[i].finished = 1;
+                    break;
+                }
+
+                unsigned int addr;
+                int len;
+                if (sscanf(line, "EIP (%d): %x", &len, &addr) == 2) {
+                    translateAddress(addr, i, processes, phys_pages, user_pages, config);
+                }
+
+                if (fgets(line, sizeof(line), fps[i])) {
+                    char *dstPtr = strstr(line, "dstM:");
+                    char *srcPtr = strstr(line, "srcM:");
+
+                    if (dstPtr) {
+                        unsigned int dstAddr = 0;
+                        char dstData[16] = {0};
+                        sscanf(dstPtr + 6, "%x %15s", &dstAddr, dstData);
+                        if (dstAddr != 0 && dstData[0] != '-')
+                            translateAddress(dstAddr, i, processes, phys_pages, user_pages, config);
+                    }
+
+                    if (srcPtr) {
+                        unsigned int srcAddr = 0;
+                        char srcData[16] = {0};
+                        sscanf(srcPtr + 6, "%x %15s", &srcAddr, srcData);
+                        if (srcAddr != 0 && srcData[0] != '-')
+                            translateAddress(srcAddr, i, processes, phys_pages, user_pages, config);
+                    }
+                }
+
+                instrCount++;
             }
         }
-        fclose(fp);
     }
 
     // Save per-process stats
@@ -165,6 +218,8 @@ void simulateVirtualMemory(Config *config) {
         config->pageTableWasted[i] =
             (long long)(MAX_PTE - processes[i].used_entries)
             * config->pageTableEntryBits / 8;
+
+        if (processes[i].page_table) free(processes[i].page_table);
     }
 
     free(phys_pages);
@@ -322,7 +377,6 @@ void printResults(Config *config){
    
    printf("Physical Memory:                %d MB\n", config->physicalMemMB);
    printf("Percent Memory Used by System:  %.1f%%\n", config->percentOS);
-   //printf("Instructions / Time Slice:      %d\n", config->instructions);
    if(config->instructions == -1)
      printf("Instructions / Time Slice:      MAX\n");
    else
@@ -346,11 +400,11 @@ void printResults(Config *config){
 
     printf("Number of Physical Pages:       %d\n", config->physicalPages);
 
-    printf("Number of Pages for System:     %d\n", config->systemPages); //(0.75 * 262144 = 196608)
+    printf("Number of Pages for System:     %d\n", config->systemPages);
 
-    printf("Size of Page Table Entry:       %d bits\n", config->pageTableEntryBits);  //(1 valid bit, 18 for PhysPage)
+    printf("Size of Page Table Entry:       %d bits\n", config->pageTableEntryBits);
 
-    printf("Total RAM for Page Table(s):    %d bytes\n", config->totalPageTableBytes);  //(512K entries * 3 .trc files * 19 / 8)
+    printf("Total RAM for Page Table(s):    %d bytes\n", config->totalPageTableBytes);
   
   //Virtual Memory Simulation Results
    printf("\n\n***** Virtual Memory Simulation Results *****\n\n");
@@ -363,16 +417,16 @@ void printResults(Config *config){
    printf("        Total Page Faults:      %lld\n\n\n", config->pageFaults);
 
    printf("Page Table Usage Per Process:\n");
-printf("------------------------------\n");
-for (i = 0; i < config->numFiles; i++) {
-    double pct = ((double)config->usedEntries[i] / MAX_PTE) * 100.0;
-    printf("[%d] %s:\n", i, config->traceFiles[i]);
-    printf("        Used Page Table Entries: %d ( %.2f%%)\n", 
-           config->usedEntries[i], pct);
-    printf("        Page Table Wasted:       %lld bytes\n", 
-           config->pageTableWasted[i]);
-    printf("\n");
-  }
+   printf("------------------------------\n");
+   for (i = 0; i < config->numFiles; i++) {
+       double pct = ((double)config->usedEntries[i] / MAX_PTE) * 100.0;
+       printf("[%d] %s:\n", i, config->traceFiles[i]);
+       printf("        Used Page Table Entries: %d ( %.2f%%)\n", 
+              config->usedEntries[i], pct);
+       printf("        Page Table Wasted:       %lld bytes\n", 
+              config->pageTableWasted[i]);
+       printf("\n");
+   }
 }
 
 
