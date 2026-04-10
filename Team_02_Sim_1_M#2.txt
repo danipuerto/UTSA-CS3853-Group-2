@@ -1,4 +1,3 @@
-bxm793@fox01:~/milestone2$ cat Team_02_Sim_1_M#2.txt
 Cache Simulator - CS 3853 - Team #2
 
 Trace File(s):
