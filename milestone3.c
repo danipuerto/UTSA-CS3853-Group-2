@@ -11,6 +11,33 @@
 #define PAGE_SIZE 4096U  //Page Size in Bytes
 #define LINE_BUFFER 512  //Buffer size for reading trace file lines
 
+//Cache Structure for milestone 3
+
+//One cache way (single cache block slot)
+typedef struct{
+  int valid;
+  unsigned int tag;
+  int rr_counter;  //Round Robin Counter (Know which way to evict next)
+} CacheBlock;
+
+//One cache row/set
+typedef struct {
+  CacheBlock *ways;     //Array of associativity blocks
+  int rr_next;          //Next way to evict (Round Robin)
+}CacheRow;
+
+//MileStone 3 counters
+typedef struct {
+  long long totalCacheAccesses; //Every row touched
+  long long instrBytes;         //Total instrcution bytes read
+  long long srcDstBytes;        //Total src/dst bytes read
+  long long cacheHits;          //Valid && tag matched
+  long long cacheMisses;        //Not valid OR tag mismatch
+  long long compulsoryMisses;   //Not Valid (first time loading a block)
+  long long conflictMisses;     //Valid but tag mismatch (eviction)
+  long long instrCount;         //Number of EIP instruction executed
+}CacheStats;
+
 //Contains all simulation parameters and computed results
 typedef struct {
     //inputs from user input
@@ -74,6 +101,100 @@ typedef struct {
 } PhysicalPage;
 
 static long long rr_pointer = 0;
+
+/*
+    Cache Helper Function (MileStone3)
+    Allocate and zero-initialize the cache
+*/
+
+CacheRow *createCache(int totalRows, int associativity) {
+  int i, j;
+  CacheRow *cache = calloc(totalRows, sizeof(CacheBlock));
+  for(i = 0; i < totalRows; i++){
+    cache[i].ways = calloc(associativity, sizeof(CacheBlocks));
+    cache[i].rr_next = 0;
+    for(j = 0; j < associativity; j++){
+        cache[i].ways[j].valid = 0;
+        cache[i].ways[j].tag = 0;
+    }
+  }
+  return cache;
+}
+
+//Free the cache
+void destroyCache(CacheRow *cache, int totalRows){
+    int i;
+    for(i = 0; i < totalRows; i++){
+        free(cache[i].ways);
+    }
+    free(cache;);
+}
+
+/*
+    Access the cache for a single physical address
+    
+    This function handles One row access. The caller loops over the rows spanned by a multi-byte access
+*/
+static void accessCacheRow(insigned int rowIndex, unsigned int tag, int associativity, CacheRow *cache, CacheStats *stats, const char *replacement){
+  
+  int way;
+  CacheRow *row = &cache[rowIndex];
+  
+  stats->totalCacheAccesses+;
+  
+  //Search all ways for a hit
+  for(way = 0; way < associativity; way++){
+     if(row->ways[way}.valid && row->ways[way].tag == tag){
+      //HIT
+      stats->cacheHits++;
+      return;
+    }
+  }
+  
+  //MISS-find a free way or evict
+  stats->cacheMisses++;
+  
+  //Look for a(n) invalid(empty) way first
+  for(way = 0; way < associativity; way++){
+    if(!row->ways[way].valid){
+      /* Compulsory miss - Block was never loaded */
+      stats->compulsoryMisses++;
+      rows->ways[way].valid = 1;
+      row->ways[way].tag = tag;
+      return;
+    }
+  }
+  
+  //All ways are valid and no tag matched, which leads to conflict miss (eviction needed)
+  stats->conflictMisses++;
+  
+  //Round robin replacement
+  int victim = row->rr_next % associativity;
+  row->rr_next = (row->rr_next + 1) % associativity;
+  
+  row->ways[victim].tag = tag;
+  row->ways[victim].valid = 1;
+}
+
+/*Process a memory access of numbytes starting at addr
+  Splits into per-row access if the access spans a block boundary
+*/
+static void accessCache(unsigned int addr, int numBytes,int indexBits, int offsetBits, int tagBits, int totalRows, int associativity, CacheRow *cache, CacheStats *stats, const char *replacement) {
+
+  //Ignore zero/invalid addresses
+  if(addr == 0)
+    return;
+    
+  unsigned int startBlock = addr >> offsetBits;
+  unsigned int endBlock = (addr + numBytes - 1) >> offsetBits;
+  
+  unsigned int block;
+  for(block = startBlock; block <= endBlock; block++){
+    unsigned int rowIndex = block & ((1u << indexBits) - 1);
+    unsigned int tag = block >> indexBits;
+    accessCacheRow(rowIndex, tag, associativity, cache, stats, replacement);
+  }
+}
 
 /*
     Simulates a virtual to physical adress translation for every one memory access.
@@ -162,7 +283,9 @@ void translateAddress(unsigned int addr, int pid,
         processes[pid].used_entries++;
     }
 }
+
 /*
+    Combined VM + mileStone 3
     Where the Main virtual memory simulation occurrs (with help of a loop)
     Reads through all trace files round robin, simulating concurrent processes.
     For each instruction slice
@@ -196,6 +319,11 @@ void simulateVirtualMemory(Config *config) {
         phys_pages[i].in_use = 0;
         phys_pages[i].owner_pid = -1;
     }
+    
+    //Allocate the cache (Milestone 3)
+    CacheRow *cache = creaetCache(config->totalRows, config->associativity);
+    CacheStats *cs = &config->cacheStats;
+    memset(cs, 0, sizeof(CacheStats));
 
     char line[LINE_BUFFER];
 
@@ -253,6 +381,12 @@ void simulateVirtualMemory(Config *config) {
                 if (sscanf(line, "EIP (%d): %x", &len, &addr) == 2) {
                   /* Translate the instruction fetch address */
                     translateAddress(addr, i, processes, phys_pages, user_pages, config);
+                    
+                    //Cache access for instuction fetch 
+                    accessCache(addr, len, config->indexBits, config->offsetBits, config->tagBits, config->totalRows, config->associativity, cache, cs config->replacement);
+                    
+                    cs->instrBytes += len;
+                    cs->instrCount++;
                 }
 
                 /*
@@ -280,8 +414,13 @@ void simulateVirtualMemory(Config *config) {
                         char srcData[16] = {0};
                         sscanf(srcPtr + 6, "%x %15s", &srcAddr, srcData);
                         /* Only translate if address is non-zero and not '-' */
-                        if (srcAddr != 0 && srcData[0] != '-')
+                        if (srcAddr != 0 && srcData[0] != '-'){
                             translateAddress(srcAddr, i, processes, phys_pages, user_pages, config);
+                            
+                            //4 byte data access
+                            accessCache(srcAddr, 4, configindexBits, config->offsetBits, config->tagBits, config->totalRows, config->associativity, cache, cs, config->replacement);
+                            cs->srcDstBytes += 4;
+                       }
                     }
                 }
 
@@ -289,6 +428,8 @@ void simulateVirtualMemory(Config *config) {
             }
         }
     }
+    
+    destroyCache(cache, config->totalRows);
 
      /* Wasted bytes = (unused entries) * (bits per PTE) / 8
      * Unused entries are those that were never mapped during simulation. */
@@ -551,6 +692,57 @@ void printResults(Config *config){
               config->pageTableWasted[i]);
        printf("\n");
    }
+   
+   // MileStone 3: Cache Simulation Results
+   
+   //Derived stats
+   double hitRate =  (cs->totalCacheAccesses > 0) ? (cs->cacheHits  * 100.0) / cs->totalCacheAccesses : 0.0;
+   
+    double missRate = (cs->totalCacheAccesses > 0) ? (cs->cacheMisses * 100.0) / cs->totalCacheAccesses : 0.0;
+    
+    /*CPI formulas to keep note of
+      
+      totalCycles = instrCount + cacheMisses * miss_penalty
+      CPI = 1 + (miss_rate × miss_penalty)
+    
+    */
+    long long = MissPenalty = 22;
+    
+     double totalCycles = (cs->instrCount > 0)
+                         ? (double)(cs->instrCount + cs->cacheMisses * missPenalty)
+                         : 0.0;
+    double cpi = (cs->instrCount > 0) ? totalCycles / cs->instrCount : 0.0;
+
+
+    long long unusedBlocks = config->totalBlocks - cs->compulsoryMisses;
+    
+    double overheadPerBlock = (config->totalBlocks > 0) ? (double)config->overheadBytes / config->totalBlocks : 0.0;
+    
+    double unusedKB  = unusedBlocks * (config->blockSize + overheadPerBlock) / 1024.0;
+    double implKB    = config->implementationSizeBytes / 1024.0;
+    double unusedPct = (implKB > 0) ? (unusedKB / implKB) * 100.0 : 0.0;
+    double wasteCost = unusedKB * 0.07;
+
+    printf("***** CACHE SIMULATION RESULTS *****\n\n");
+    printf("Total Cache Accesses:           %lld     (%lld addresses)\n",
+           cs->totalCacheAccesses, config->virtualPagesMapped);
+    printf("--- Instruction Bytes:          %lld\n", cs->instrBytes);
+    printf("--- SrcDst Bytes:               %lld\n", cs->srcDstBytes);
+    printf("Cache Hits:                     %lld\n", cs->cacheHits);
+    printf("Cache Misses:                   %lld\n", cs->cacheMisses);
+    printf("--- Compulsory Misses:          %lld\n", cs->compulsoryMisses);
+    printf("--- Conflict Misses:            %lld\n\n", cs->conflictMisses);
+
+    printf("***** *****  CACHE HIT & MISS RATE:  ***** *****\n\n");
+    printf("Hit Rate:                       %.4f%%\n", hitRate);
+    printf("Miss Rate:                      %.4f%%\n", missRate);
+    printf("CPI:                            %.2f Cycles/Instruction  (%lld)\n",
+           cpi, cs->instrCount);
+    printf("Unused Cache Space:             %.2f KB / %.2f KB = %.2f%%  Waste: $%.2f/chip\n",
+           unusedKB, implKB, unusedPct, wasteCost);
+    printf("Unused Cache Blocks:            %lld / %d\n",
+           unusedBlocks, config->totalBlocks);
+
 }
 
 
