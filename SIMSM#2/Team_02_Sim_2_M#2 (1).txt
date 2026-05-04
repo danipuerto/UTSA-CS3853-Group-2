@@ -1,0 +1,121 @@
+Cache Simulator - CS 3853 - Team #2
+
+Trace File(s):
+
+        A-9_new_trunk1.trc
+
+
+***** Cache Input Parameters *****
+
+Cache Size:                     512 KB
+Block Size:                     16 bytes
+Associativity:                  4
+Replacement Policy:             Round Robin
+Physical Memory:                1024 MB
+Percent Memory Used by System:  75.0%
+Instructions / Time Slice:      100
+
+
+***** Cache Calculated Values *****
+
+Total # Blocks:                 32768
+Tag Size:                       13 bits
+Index Size:                     13 bits
+Total # Rows:                   8192
+Overhead Size:                  57344 bytes
+Implementation Memory Size:     568.00 KB (581632 bytes)
+Cost:                           $39.76 @ $0.07 per KB
+
+
+***** Physical Memory Calculated Values *****
+
+Number of Physical Pages:       262144
+Number of Pages for System:     196608
+Size of Page Table Entry:       19 bits
+Total RAM for Page Table(s):    1245184 bytes
+
+
+***** Virtual Memory Simulation Results *****
+
+Physical Pages Used By SYSTEM:  196608
+Pages Available to User:        65536
+
+Virtual Pages Mapped:           126439
+        ------------------------------
+        Page Table Hits:        126102
+
+        Pages from Free:        337
+
+        Total Page Faults:      0
+
+
+Page Table Usage Per Process:
+------------------------------
+[0] A-9_new_trunk1.trc:
+        Used Page Table Entries: 337 ( 0.06%)
+        Page Table Wasted:       1244383 bytes
+
+bxm793@fox01:~/milestone2$ ^C
+bxm793@fox01:~/milestone2$ cat Team_02_Sim_2_M#2.txt
+Cache Simulator - CS 3853 - Team #2
+
+Trace File(s):
+
+        A-9_new_1.5.pdf.trc
+        A-10_new_1.5_a.pdf.trc
+
+
+***** Cache Input Parameters *****
+
+Cache Size:                     1024 KB
+Block Size:                     32 bytes
+Associativity:                  8
+Replacement Policy:             Round Robin
+Physical Memory:                512 MB
+Percent Memory Used by System:  50.0%
+Instructions / Time Slice:      MAX
+
+
+***** Cache Calculated Values *****
+
+Total # Blocks:                 32768
+Tag Size:                       12 bits
+Index Size:                     12 bits
+Total # Rows:                   4096
+Overhead Size:                  53248 bytes
+Implementation Memory Size:     1076.00 KB (1101824 bytes)
+Cost:                           $75.32 @ $0.07 per KB
+
+
+***** Physical Memory Calculated Values *****
+
+Number of Physical Pages:       131072
+Number of Pages for System:     65536
+Size of Page Table Entry:       18 bits
+Total RAM for Page Table(s):    2359296 bytes
+
+
+***** Virtual Memory Simulation Results *****
+
+Physical Pages Used By SYSTEM:  65536
+Pages Available to User:        65536
+
+Virtual Pages Mapped:           694476
+        ------------------------------
+        Page Table Hits:        693240
+
+        Pages from Free:        1236
+
+        Total Page Faults:      0
+
+
+Page Table Usage Per Process:
+------------------------------
+[0] A-9_new_1.5.pdf.trc:
+        Used Page Table Entries: 669 ( 0.13%)
+        Page Table Wasted:       1178142 bytes
+
+[1] A-10_new_1.5_a.pdf.trc:
+        Used Page Table Entries: 567 ( 0.11%)
+        Page Table Wasted:       1178372 bytes
+
